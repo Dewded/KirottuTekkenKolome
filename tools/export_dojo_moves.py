@@ -58,7 +58,7 @@ def root_motion(bank: bytes, source: int) -> list[list[int]] | None:
         return None
     try:
         return [decode(bank, source, f, 3) for f in range(bank[source])]
-    except ValueError:
+    except (ValueError, struct.error, IndexError):
         return None
 
 
@@ -78,7 +78,7 @@ def export(ram: bytes, bank: bytes, fighter: str) -> dict:
         try:
             if ram_record(words[3]):
                 record['cancels'] = [list(row) for row in cancel_rows(ram, words[3])]
-        except ValueError as error:
+        except (ValueError, struct.error) as error:
             problems.append(f'{a:08x} cancels: {error}')
         for cmd, *_ in record['cancels']:
             if 0x800F <= cmd < 0xFFFF and cmd not in sequences:
@@ -242,4 +242,9 @@ if __name__ == '__main__':
         main()
     except (ValueError, OSError, KeyError) as error:
         print(f'Export failed: {error}', file=sys.stderr)
+        sys.exit(1)
+    except Exception:
+        import traceback
+        traceback.print_exc()
+        print('Export failed: paste the lines above to Claude.', file=sys.stderr)
         sys.exit(1)
