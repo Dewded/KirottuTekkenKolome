@@ -121,7 +121,7 @@ def bank_bytes(ttt1: Path | None) -> bytes:
     if saved.is_file():
         return verified(saved, BANK_SHA)
     if not ttt1:
-        raise ValueError('No verified arcade bank yet: pass --ttt1 path\\to\\tektagt.zip')
+        raise ValueError('No tektagt.zip found: put it in roms\\ next to Export-Dojo-Moves.cmd')
     import arcade_model_probe as probe
     definition = json.loads(probe.MANIFEST.read_text(encoding='utf-8'))['sets']['tektagt']
     bank = probe.reconstruct(ttt1, definition)[0]['bankedroms']
@@ -135,6 +135,26 @@ def setup_inputs() -> dict:
         return json.loads((ROOT / '.setup/last-inputs.json').read_text(encoding='utf-8'))
     except (OSError, ValueError):
         return {}
+
+
+def find_ttt1() -> Path | None:
+    """The zip setup used, else one dropped next to the repo (roms\\ or the root), else ask."""
+    used = setup_inputs().get('ttt1')
+    for path in ([Path(used)] if used else []) + [ROOT / 'roms/tektagt.zip', ROOT / 'tektagt.zip',
+                                                   JUN / 'roms/tektagt.zip', ROOT.parent / 'tektagt.zip']:
+        if path.is_file():
+            return path
+    try:
+        import tkinter as tk
+        from tkinter import filedialog
+        window = tk.Tk()
+        window.withdraw()
+        chosen = filedialog.askopenfilename(title='Select your tektagt.zip (TTT1 arcade)',
+                                            filetypes=[('TTT1 arcade ZIP', '*.zip')])
+        window.destroy()
+        return Path(chosen) if chosen else None
+    except Exception:  # no display or no tkinter: the error below says what to pass
+        return None
 
 
 def capture(ttt1: Path, mame: Path | None) -> None:
@@ -164,10 +184,10 @@ def main() -> None:
     ap.add_argument('--mame', type=Path, help='MAME 0.289 executable (default: the setup\'s)')
     args = ap.parse_args()
     OUT.mkdir(parents=True, exist_ok=True)
-    ttt1 = args.ttt1 or (Path(setup_inputs()['ttt1']) if setup_inputs().get('ttt1') else None)
+    ttt1 = args.ttt1 or find_ttt1()
     if args.capture:
         if not ttt1 or not ttt1.is_file():
-            raise ValueError('Pass --ttt1 path\\to\\tektagt.zip')
+            raise ValueError('No tektagt.zip found: put it in roms\\ next to Export-Dojo-Moves.cmd')
         capture(ttt1, args.mame)
     bank = bank_bytes(ttt1)
     sources = {f: OUT / f'{f}-select-ram.bin' for f in FIGHTERS}

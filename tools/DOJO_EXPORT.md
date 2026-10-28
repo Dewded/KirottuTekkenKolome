@@ -7,7 +7,8 @@ backdashes come out of the cancels instead of being special-cased.
 Double-click `Export-Dojo-Moves.cmd` (or `python tools/export_dojo_moves.py --capture`):
 
 1. MAME 0.289 opens (the setup's copy; downloaded from the MAME project if missing) with your `tektagt.zip`, its
-   own saves under `workspace/dojo-export/mame/`. It coins up and starts by itself; if not, press 5 then 1.
+   own saves under `workspace/dojo-export/mame/`. It finds the zip setup used, else `roms\tektagt.zip` next to
+   the .cmd, else asks. It coins up and starts by itself; if not, press 5 then 1.
 2. On the character select, highlight a fighter and press **K** (Kazuya), **H** (Heihachi) or **J** (Jin). The top
    line says what was saved. Close MAME with Esc.
 3. The export writes `workspace/dojo-export/<fighter>-ttt1.json` and opens the folder. Jin is exported even
