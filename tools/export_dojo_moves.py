@@ -138,11 +138,11 @@ def setup_inputs() -> dict:
 
 
 def find_ttt1() -> Path | None:
-    """The zip setup used, else one dropped next to the repo (roms\\ or the root), else ask."""
+    """The zip (or extracted folder) setup used, else one in roms\\ next to the .cmd, else ask."""
     used = setup_inputs().get('ttt1')
-    for path in ([Path(used)] if used else []) + [ROOT / 'roms/tektagt.zip', ROOT / 'tektagt.zip',
-                                                   JUN / 'roms/tektagt.zip', ROOT.parent / 'tektagt.zip']:
-        if path.is_file():
+    for path in ([Path(used)] if used else []) + [ROOT / 'roms/tektagt.zip', ROOT / 'roms/tektagt',
+                                                   ROOT / 'tektagt.zip', JUN / 'roms/tektagt.zip']:
+        if path.is_file() or (path.is_dir() and any(path.iterdir())):
             return path
     try:
         import tkinter as tk
@@ -157,6 +157,26 @@ def find_ttt1() -> Path | None:
         return None
 
 
+def rom_zip(source: Path) -> Path:
+    """A fresh copy of the set for MAME and the bank: a zip as is, an extracted folder zipped up (chips by name)."""
+    import zipfile
+    roms = OUT / 'mame/roms'
+    roms.mkdir(parents=True, exist_ok=True)
+    target = roms / 'tektagt.zip'
+    if source.is_dir():
+        with zipfile.ZipFile(target, 'w', zipfile.ZIP_STORED) as out:
+            for chip in sorted(p for p in source.iterdir() if p.is_file()):
+                out.write(chip, chip.name)
+    elif source.resolve() != target.resolve():
+        shutil.copyfile(source, target)
+    with zipfile.ZipFile(target) as z:
+        names = {Path(i.filename).name.casefold() for i in z.infolist()}
+    missing = [n for n in ('teg2verc1.2e', 'teg2verc1.2j') if n not in names]
+    if missing:
+        raise ValueError(f'{source} has no {", ".join(missing)}: it holds {", ".join(sorted(names)) or "nothing"}')
+    return target
+
+
 def capture(ttt1: Path, mame: Path | None) -> None:
     """Interactive MAME run with its own saves (nvram/cfg under workspace/), so arcade clears made here to unlock
     a hidden fighter stay for the next run and the player's own emulator setup is never touched."""
@@ -165,10 +185,7 @@ def capture(ttt1: Path, mame: Path | None) -> None:
         import setup_backend
         mame = setup_backend.mame()  # the setup's pinned MAME 0.289, downloaded from the MAME project if missing
     work = OUT / 'mame'
-    roms = work / 'roms'
-    roms.mkdir(parents=True, exist_ok=True)
-    if not (roms / 'tektagt.zip').is_file():
-        shutil.copyfile(ttt1, roms / 'tektagt.zip')
+    roms = ttt1.parent
     print('MAME opens now. On the character select, highlight a fighter and press K (Kazuya), H (Heihachi) or '
           'J (Jin). Close MAME with Esc when done.', flush=True)
     subprocess.run([str(mame), 'tektagt', '-rompath', str(roms), '-window', '-skip_gameinfo',
@@ -185,9 +202,12 @@ def main() -> None:
     args = ap.parse_args()
     OUT.mkdir(parents=True, exist_ok=True)
     ttt1 = args.ttt1 or find_ttt1()
+    if ttt1:
+        print(f'Using the TTT1 set at {ttt1}', flush=True)
+        ttt1 = rom_zip(ttt1)
+    elif args.capture:
+        raise ValueError('No tektagt.zip found: put it in roms\\ next to Export-Dojo-Moves.cmd')
     if args.capture:
-        if not ttt1 or not ttt1.is_file():
-            raise ValueError('No tektagt.zip found: put it in roms\\ next to Export-Dojo-Moves.cmd')
         capture(ttt1, args.mame)
     bank = bank_bytes(ttt1)
     sources = {f: OUT / f'{f}-select-ram.bin' for f in FIGHTERS}
