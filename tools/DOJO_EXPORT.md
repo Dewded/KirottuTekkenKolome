@@ -15,7 +15,8 @@ Double-click `Export-Dojo-Moves.cmd` (or `python tools/export_dojo_moves.py --ca
    without a capture, from the Jun import's `jin-select-ram.bin`.
 
 Kazuya may be a locked "?" slot on a fresh board: TTT1 unlocks hidden fighters one by one as arcade mode is
-cleared, and this MAME's saves keep those clears for the next run.
+cleared (by the guides, Kazuya is the 8th), and this MAME's saves keep those clears for the next run. MAME runs with
+cheats on, read from `workspace/dojo-export/mame/cheat/` (put a cheat.7z there; Tab → Cheat in MAME).
 
 What is exported: raw record words, frame counts, root motion (the first three motion channels: heading, height,
 distance) per frame, flattened cancel rows, the input sequences they use, hit rows and the reactions they name.

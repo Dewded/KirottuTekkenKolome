@@ -186,11 +186,13 @@ def capture(ttt1: Path, mame: Path | None) -> None:
         mame = setup_backend.mame()  # the setup's pinned MAME 0.289, downloaded from the MAME project if missing
     work = OUT / 'mame'
     roms = ttt1.parent
+    (work / 'cheat').mkdir(parents=True, exist_ok=True)  # drop a MAME cheat.7z here to unlock hidden fighters
     print('MAME opens now. On the character select, highlight a fighter and press K (Kazuya), H (Heihachi) or '
           'J (Jin). Close MAME with Esc when done.', flush=True)
     subprocess.run([str(mame), 'tektagt', '-rompath', str(roms), '-window', '-skip_gameinfo',
                     '-autoboot_script', str(ROOT / 'tools/capture_ttt1_fighters.lua'), '-autoboot_delay', '0',
                     '-nvram_directory', str(work / 'nvram'), '-cfg_directory', str(work / 'cfg'),
+                    '-cheat', '-cheatpath', str(work / 'cheat'),
                     '-snapshot_directory', str(OUT)], cwd=OUT, check=False)
 
 
